@@ -18,7 +18,7 @@
 
 		include("coneccion.php");
 
-		$mysqli->real_query("INSERT INTO repositorios (name, description, type, dev, test, prod, status) VALUES ('".$name."', '".$description."' ,".$type.", '".$dev."', '".$test."', '".$prod."', ".$status.")");
+		$mysqli->real_query("INSERT INTO repositorios (name, description, type, develop, staging, master, status) VALUES ('".$name."', '".$description."' ,".$type.", '".$dev."', '".$test."', '".$prod."', ".$status.")");
 
 		include("read_repos.php");
 		$mysqli->close();

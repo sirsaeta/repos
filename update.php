@@ -19,7 +19,7 @@
 		
 		include("coneccion.php");
 
-		$query_string = "UPDATE repositorios SET name='".$name."', description='".$description."', type=".$type.", dev='".$dev."', test='".$test."', prod='".$prod."', status=".$status." WHERE id=".$id;
+		$query_string = "UPDATE repositorios SET name='".$name."', description='".$description."', type=".$type.", develop='".$dev."', staging='".$test."', master='".$prod."', status=".$status." WHERE id=".$id;
 		if (!$mysqli->query($query_string)) {
 			printf("Errormessage: %s\n", $mysqli->error);
 			echo 'Houston we have a problem '.mysqli_error($mysqli);

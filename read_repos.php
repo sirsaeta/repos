@@ -20,9 +20,9 @@
 			echo "<tr>
 				<td>".$obj->id."</td>
 				<td><a href='https://bitbucket.telecom.com.ar/projects/CBFF/repos/".$obj->name."/commits' target='_blank'>".$obj->name."</a></td>
-				<td>".$obj->dev."</td>
-				<td>".$obj->test."</td>
-				<td>".$obj->prod."</td>
+				<td>".$obj->develop."</td>
+				<td>".$obj->staging."</td>
+				<td>".$obj->master."</td>
 				<td>".$obj->name_repo_type."</td>
 				<td>".$obj->status."</td>
 			</tr>";
