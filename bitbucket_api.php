@@ -64,7 +64,21 @@ class Bitbucket {
 			)
 		);
 		$payload = json_encode($data);
-		return $this->cUrlGet("https://bitbucket.telecom.com.ar/rest/api/1.0/projects/CBFF/repos/$REPO_NAME/pull-requests", $payload)
+
+		return $this->cUrlPost("https://bitbucket.telecom.com.ar/rest/api/1.0/projects/CBFF/repos/".$REPO_NAME."/pull-requests", $payload);
+	}
+
+	function GetPR($REPO_NAME,$PR_ID)
+	{
+		return $this->cUrlGet("https://bitbucket.telecom.com.ar/rest/api/1.0/projects/CBFF/repos/".$REPO_NAME."/pull-requests/".$PR_ID."/merge");
+	}
+
+	function MergePR($REPO_NAME,$PR_ID)
+	{
+		$headers = array(
+			"X-Atlassian-Token: no-check"
+		);
+		return $this->cUrlPost("https://bitbucket.telecom.com.ar/rest/api/1.0/projects/CBFF/repos/".$REPO_NAME."/pull-requests/".$PR_ID."/merge?version=0",false,$headers);
 	}
 
 	function verify($repo, $project, $until, $limit, $tags) {
@@ -88,7 +102,7 @@ class Bitbucket {
 		unset($update);
 	}
 
-	private function cUrlPost($url, $payload, $status = null)
+	private function cUrlPost($url, $payload, $headers_add=array(), $status = null)
 	{
 		$headers = array(
 			"Content-Type: application/json",
@@ -96,9 +110,16 @@ class Bitbucket {
 			"Pragma: no-cache",
 			"Authorization: ".$this->getAuthorization()
 		);
+		foreach ($headers_add as $key => $value) {
+			array_push($headers,$value);
+		}
+		
 		$ch = curl_init();
 		curl_setopt($ch, CURLOPT_URL, $url);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+		curl_setopt($ch, CURLOPT_POST, TRUE);
+		if ($payload) {
+			curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+		}
 		curl_setopt($ch, CURLOPT_HEADER, TRUE);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
 		curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
@@ -120,7 +141,7 @@ class Bitbucket {
 		{
 			if($httpCode < 400)
 			{
-				return true;
+				return $body;
 			}
 			else
 			{
@@ -129,7 +150,7 @@ class Bitbucket {
 		}
 		elseif($status == $httpCode)
 		{
-			return true;
+			return $body;
 		}
 
 		return FALSE;
@@ -278,12 +299,36 @@ elseif (!Empty($_GET["stm"])) {
 	$project = $_GET["project"] ?? "CBFF";
 	$bitbucket = new Bitbucket;
 
-	$bitbucket->CreatePR($repo, $PR_TITLE, $FROM_BRANCH, $TO_BRANCH, $project);
+	$body_pr = $bitbucket->CreatePR($repo, "CBFF-000: Staging to Master", "staging", "master", $project);
+	$pull_requests = json_decode($body_pr, true);
 
-	$host  = $_SERVER['HTTP_HOST'];
-	$uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
-	// $extra = 'index.php';
-	// header("Location: http://$host$uri/$extra");
-	header("Location: http://$host$uri/");
+	$body_get_merge = $bitbucket->GetPR($repo, $pull_requests["id"]);
+	$merge = json_decode($body_get_merge, true);
+	
+	if ($merge)
+	{
+		if ($merge["canMerge"]) {
+			$body_merge_pr = $bitbucket->MergePR($repo, $pull_requests["id"]);
+			$merge_pr = json_decode($body_merge_pr, true);
+			
+			$host  = $_SERVER['HTTP_HOST'];
+			$uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
+			// $extra = 'index.php';
+			// header("Location: http://$host$uri/$extra");
+			header("Location: http://$host$uri/");
+		}
+		else {
+			echo "====================================== [ERROR 2] ==============================================";
+			echo "CANNOT MERGE THE PR #".$pull_requests['id']." FOR ".$repo.". PLEASE, CHECK IT OUT AND FIX: ";
+			echo "https://bitbucket.telecom.com.ar/projects/CBFF/repos/".$repo."/pull-requests/".$pull_requests['id']."/overview";
+			echo "=============================================================================================";
+		}
+	}
+	else {
+		echo "====================================== [ERROR] ==============================================";
+		echo "CANNOT MERGE THE PR #".$pull_requests['id']." FOR ".$repo.". PLEASE, CHECK IT OUT AND FIX: ";
+		echo "https://bitbucket.telecom.com.ar/projects/CBFF/repos/".$repo."/pull-requests/".$pull_requests['id']."/overview";
+		echo "=============================================================================================";
+	}
 	exit;
 }

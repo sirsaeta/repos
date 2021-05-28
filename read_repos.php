@@ -1,6 +1,6 @@
 <?php
 	# Check If Record Exists
-	echo "<html><body><table border=1>";
+	echo "<html><body style='background-color:#E5E8E8'><table border=1>";
 	echo "<tr>
 		<th rowspan=2>Id</th>
 		<th rowspan=2>Repositorio</th>
@@ -20,14 +20,14 @@
 			echo "<tr>
 				<td>".$obj->id."</td>
 				<td><a href='https://bitbucket.telecom.com.ar/projects/CBFF/repos/".$obj->name."/commits' target='_blank'>".$obj->name."</a></td>
-				<td style='background-color:blue'>".$obj->develop."</td>
-				<td style='background-color:".(explode("-", $obj->develop)[0]==explode("-", $obj->staging)[0] ? 'green' : 'red')."'>".$obj->staging."</td>
-				<td style='background-color:".(explode("-", $obj->master)[0]==explode("-", $obj->staging)[0] ? 'green' : 'red')."'>".$obj->master."</td>
+				<td style='background-color:#85C1E9'>".$obj->develop."</td>
+				<td style='background-color:".(explode("-", $obj->develop)[0]==explode("-", $obj->staging)[0] ? '#48C9B0' : '#EC7063')."'>".$obj->staging."</td>
+				<td style='background-color:".(explode("-", $obj->master)[0]==explode("-", $obj->staging)[0] ? '#48C9B0' : '#EC7063')."'>".$obj->master."</td>
 				<td>".$obj->status."</td>
 				<td><a href='bitbucket_api.php?all=true&repo=".$obj->name."'>Verificar</a></td>
 				<td><a href='bitbucket_api.php?all=true&repo=".$obj->name."'>Promote</a></td>
 				<td><a href='bitbucket_api.php?all=true&repo=".$obj->name."'>Develop to Staging</a></td>
-				<td><a href='bitbucket_api.php?all=true&repo=".$obj->name."'>Staging to Master</a></td>
+				<td><a href='bitbucket_api.php?stm=true&repo=".$obj->name."'>Staging to Master</a></td>
 			</tr>";
 		}
 		/* liberar el conjunto de resultados */
