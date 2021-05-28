@@ -6,7 +6,7 @@
 		<th rowspan=2>Repositorio</th>
 		<th colspan=3>Versión</th>
 		<th rowspan=2>Tipo</th>
-		<th rowspan=2>Estado</th>
+		<th rowspan=2 colspan=4>Acciones</th>
 	</tr>";
 	echo "<tr>
 		<th>Dev</th>
@@ -20,11 +20,14 @@
 			echo "<tr>
 				<td>".$obj->id."</td>
 				<td><a href='https://bitbucket.telecom.com.ar/projects/CBFF/repos/".$obj->name."/commits' target='_blank'>".$obj->name."</a></td>
-				<td>".$obj->develop."</td>
-				<td>".$obj->staging."</td>
-				<td>".$obj->master."</td>
-				<td>".$obj->name_repo_type."</td>
+				<td style='background-color:blue'>".$obj->develop."</td>
+				<td style='background-color:".(explode("-", $obj->develop)[0]==explode("-", $obj->staging)[0] ? 'green' : 'red')."'>".$obj->staging."</td>
+				<td style='background-color:".(explode("-", $obj->master)[0]==explode("-", $obj->staging)[0] ? 'green' : 'red')."'>".$obj->master."</td>
 				<td>".$obj->status."</td>
+				<td><a href='bitbucket_api.php?all=true&repo=".$obj->name."'>Verificar</a></td>
+				<td><a href='bitbucket_api.php?all=true&repo=".$obj->name."'>Promote</a></td>
+				<td><a href='bitbucket_api.php?all=true&repo=".$obj->name."'>Develop to Staging</a></td>
+				<td><a href='bitbucket_api.php?all=true&repo=".$obj->name."'>Staging to Master</a></td>
 			</tr>";
 		}
 		/* liberar el conjunto de resultados */

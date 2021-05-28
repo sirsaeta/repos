@@ -1,5 +1,73 @@
 <?php
-	$json = file_get_contents('php://input');
+class UpdateRepo {
+	private $id;
+	private $name;
+	private $description;
+	private $type;
+	private $dev;
+	private $test;
+	private $prod;
+	private $status;
+
+	function validCampos($data) {
+		$response["status"]=true;
+		$response["message"]="";
+		$this->id = $data->{"id"} ?? "";
+		$this->name = $data->{"name"} ?? "";
+		$this->type = $data->{"type"} ?? "";
+		$this->description = $data->{"description"} ?? "";
+		$this->dev = $data->{"dev"} ?? "";
+		$this->test = $data->{"test"} ?? "";
+		$this->prod = $data->{"prod"} ?? "";
+		$this->status = $data->{"status"} ?? 0;
+		if ($this->id=="") {
+			$response["status"]=false;
+			$response["message"]="Campo id es obligatorio";
+		}
+		elseif ($this->name=="") {
+			$response["status"]=false;
+			$response["message"]="Campo name es obligatorio";
+		}
+		elseif ($this->type=="") {
+			$response["status"]=false;
+			$response["message"]="Campo type es obligatorio";
+		}
+		return json_encode($response);
+	}
+
+	function updateAllCampos() {
+		$response["status"]=true;
+		$response["message"]="";
+		include("coneccion.php");
+
+		$query_string = "UPDATE repositorios SET name='".$this->name."', description='".$this->description."', type=".$this->type.", develop='".$this->dev."', staging='".$this->test."', master='".$this->prod."', status=".$this->status." WHERE id=".$this->id;
+		if (!$mysqli->query($query_string)) {
+			error_log("Errormessage: %s\n", $mysqli->error);
+			$response["status"]=false;
+			$response["message"]=$mysqli->error;
+		}
+		$mysqli->close();
+		return $response;
+	}
+
+	function updateCommitAndTag($until,$repoName,$lastCommit,$tag) {
+		$response["status"]=true;
+		$response["message"]="";
+		include("coneccion.php");
+		
+		$query_string = "UPDATE repositorios SET "
+		.$until."_last_commit='".$lastCommit."', "
+		.$until."='".$tag."' WHERE name='".$repoName."'";
+		if (!$mysqli->query($query_string)) {
+			error_log("Errormessage: %s\n", $mysqli->error);
+			$response["status"]=false;
+			$response["message"]=$mysqli->error;
+		}
+		$mysqli->close();
+		return $response;
+	}
+}
+	/*$json = file_get_contents('php://input');
 	if (!empty($json))
 	{
 		// Get the JSON contents
@@ -7,27 +75,18 @@
 		
 		// decode the json data
 		$data = json_decode($json);
-		
-		$id = $data->{"id"} ?? die("campo id es obligatorio");
-		$name = $data->{"name"} ?? die("campo nombre es obligatorio");
-		$description = $data->{"description"} ?? "";
-		$type = $data->{"type"} ?? die("campo tipo es obligatorio");
-		$dev = $data->{"dev"} ?? "";
-		$test = $data->{"test"} ?? "";
-		$prod = $data->{"prod"} ?? "";
-		$status = $data->{"status"} ?? 0;
-		
-		include("coneccion.php");
-
-		$query_string = "UPDATE repositorios SET name='".$name."', description='".$description."', type=".$type.", develop='".$dev."', staging='".$test."', master='".$prod."', status=".$status." WHERE id=".$id;
-		if (!$mysqli->query($query_string)) {
-			printf("Errormessage: %s\n", $mysqli->error);
-			echo 'Houston we have a problem '.mysqli_error($mysqli);
+		$update = new Update;
+		$valid = $update->validCampos($data);
+		if (!$valid["status"]) {
+			die($valid["message"]);
 		}
-		include("read_repos.php");
-		$mysqli->close();
+		
+		$valid = $update->updateAllCampos();
+		if (!$valid["status"]) {
+			die($valid["message"]);
+		}
 	}
 	else // $_POST is empty.
 	{
 		echo "Perform code for page without POST data. ";
-	}
+	}*/
