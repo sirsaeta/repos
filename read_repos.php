@@ -25,8 +25,7 @@
 				<td style='background-color:".(explode("-", $obj->master)[0]==explode("-", $obj->staging)[0] ? '#48C9B0' : '#EC7063')."'>".$obj->master."</td>
 				<td>".$obj->status."</td>
 				<td><a href='bitbucket_api.php?all=true&repo=".$obj->name."'>Verificar</a></td>
-				<td><a href='bitbucket_api.php?all=true&repo=".$obj->name."'>Promote</a></td>
-				<td><a href='bitbucket_api.php?all=true&repo=".$obj->name."'>Develop to Staging</a></td>
+				<td><a href='promote.php?paso=1&repo=".$obj->name."'>Develop to Staging</a></td>
 				<td><a href='bitbucket_api.php?stm=true&repo=".$obj->name."'>Staging to Master</a></td>
 			</tr>";
 		}
