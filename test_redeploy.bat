@@ -18,11 +18,13 @@ IF /I "%PASO%" EQU "1" (
 	echo REPO: %REPO%
 )
 IF /I "%PASO%" EQU "2" (
+	cd %REPO%
 	git add . && git commit -m "CBFF-000: Promote_Image Redeploy" && git push --set-upstream origin feature/CBFF-000-promote-image
 	git checkout develop && git pull && git branch -d feature/CBFF-000-promote-image
 	echo REPO: %REPO%
 )
 IF /I "%PASO%" EQU "3" (
+	cd %REPO%
 	git checkout staging &&	git pull &&	git checkout master &&	git pull &&	git checkout develop &&	git pull
 )
 cls

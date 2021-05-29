@@ -75,42 +75,42 @@ if ($PASO==1) {
 			$body_merge_pr = $bitbucket->MergePR($REPO_NAME, $pull_requests["id"]);
 			$merge_pr = json_decode($body_merge_pr, true);
             var_dump($merge_pr);
-		}
-		else {
-			echo "====================================== [ERROR 2] ==============================================<br>";
-			echo "CANNOT MERGE THE PR #".$pull_requests['id']." FOR ".$repo.". PLEASE, CHECK IT OUT AND FIX: ";
-			echo "https://bitbucket.telecom.com.ar/projects/CBFF/repos/".$repo."/pull-requests/".$pull_requests['id']."/overview";
-			echo "=============================================================================================<br>";
-		}
-	}
-	else {
-		echo "====================================== [ERROR] ==============================================<br>";
-		echo "CANNOT MERGE THE PR #".$pull_requests['id']." FOR ".$repo.". PLEASE, CHECK IT OUT AND FIX: ";
-		echo "https://bitbucket.telecom.com.ar/projects/CBFF/repos/".$repo."/pull-requests/".$pull_requests['id']."/overview";
-		echo "=============================================================================================<br>";
-	}
-	echo "==============================================================<br>";
-	echo "=                                                            =<br>";
-	echo "=    Crear PR develop a staging                              =<br>";
-	echo "= Poner en Title prefix de comentarios 'Rollout_Strategy'    =<br>";
-	echo "=                                                            =<br>";
-	echo "==============================================================<br>";
-	echo "=                                                            =<br>";
-	echo "=     Mezclar PR develop a staging                           =<br>";
-	echo "=                                                            =<br>";
-	echo "==============================================================<br>";
-    $body_pr = $bitbucket->CreatePR($REPO_NAME, "Rollout_Strategy", "develop", "staging");
-	$pull_requests = json_decode($body_pr, true);
-
-	$body_get_merge = $bitbucket->GetPR($REPO_NAME, $pull_requests["id"]);
-	$merge = json_decode($body_get_merge, true);
-	
-	if ($merge)
-	{
-		if ($merge["canMerge"]) {
-			$body_merge_pr = $bitbucket->MergePR($REPO_NAME, $pull_requests["id"]);
-			$merge_pr = json_decode($body_merge_pr, true);
-            var_dump($merge_pr);
+            echo "==============================================================<br>";
+            echo "=                                                            =<br>";
+            echo "=    Crear PR develop a staging                              =<br>";
+            echo "= Poner en Title prefix de comentarios 'Rollout_Strategy'    =<br>";
+            echo "=                                                            =<br>";
+            echo "==============================================================<br>";
+            echo "=                                                            =<br>";
+            echo "=     Mezclar PR develop a staging                           =<br>";
+            echo "=                                                            =<br>";
+            echo "==============================================================<br>";
+            $body_pr = $bitbucket->CreatePR($REPO_NAME, "Rollout_Strategy", "develop", "staging");
+            $pull_requests = json_decode($body_pr, true);
+        
+            $body_get_merge = $bitbucket->GetPR($REPO_NAME, $pull_requests["id"]);
+            $merge = json_decode($body_get_merge, true);
+            
+            if ($merge)
+            {
+                if ($merge["canMerge"]) {
+                    $body_merge_pr = $bitbucket->MergePR($REPO_NAME, $pull_requests["id"]);
+                    $merge_pr = json_decode($body_merge_pr, true);
+                    var_dump($merge_pr);
+                }
+                else {
+                    echo "====================================== [ERROR 2] ==============================================<br>";
+                    echo "CANNOT MERGE THE PR #".$pull_requests['id']." FOR ".$repo.". PLEASE, CHECK IT OUT AND FIX: ";
+                    echo "https://bitbucket.telecom.com.ar/projects/CBFF/repos/".$repo."/pull-requests/".$pull_requests['id']."/overview";
+                    echo "=============================================================================================<br>";
+                }
+            }
+            else {
+                echo "====================================== [ERROR] ==============================================<br>";
+                echo "CANNOT MERGE THE PR #".$pull_requests['id']." FOR ".$repo.". PLEASE, CHECK IT OUT AND FIX: ";
+                echo "https://bitbucket.telecom.com.ar/projects/CBFF/repos/".$repo."/pull-requests/".$pull_requests['id']."/overview";
+                echo "=============================================================================================<br>";
+            }
 		}
 		else {
 			echo "====================================== [ERROR 2] ==============================================<br>";
