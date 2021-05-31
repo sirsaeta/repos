@@ -68,9 +68,14 @@ class Bitbucket {
 		return $this->cUrlPost("https://bitbucket.telecom.com.ar/rest/api/1.0/projects/CBFF/repos/".$REPO_NAME."/pull-requests", $payload);
 	}
 
-	function GetPR($REPO_NAME,$PR_ID)
+	function GetPRByID($REPO_NAME,$PR_ID)
 	{
 		return $this->cUrlGet("https://bitbucket.telecom.com.ar/rest/api/1.0/projects/CBFF/repos/".$REPO_NAME."/pull-requests/".$PR_ID."/merge");
+	}
+
+	function GetPR($REPO_NAME)
+	{
+		return $this->cUrlGet("https://bitbucket.telecom.com.ar/rest/api/1.0/projects/CBFF/repos/$REPO_NAME/pull-requests/");
 	}
 
 	function MergePR($REPO_NAME,$PR_ID)
@@ -85,16 +90,32 @@ class Bitbucket {
 		$update = new UpdateRepo;
 		$response = $this->getCommitsForOneRepository($repo, $project, $until, $limit);
 		$data = json_decode($response, true);
+		$responsePR = $this->GetPR($repo);
+		$dataPR = json_decode($responsePR, true);
+		$prSize = 0;
+		if (($dataPR ? $dataPR["size"] : 0)>0) {
+			foreach ($dataPR["values"] as $keyPr => $valuePr) {
+				if ($valuePr["toRef"]["displayId"]==$until) {
+					$prSize++;
+				}
+			}
+		}
 		
 		$break = false;
 		foreach ($data["values"] as $key => $value) {
-			foreach ($tags["values"] as $keyTag => $valueTag) {
-				if ($value["id"]===$valueTag["latestCommit"]) {
-					$update->updateCommitAndTag($until,$repo,$value["id"],$valueTag["displayId"]);
-					$break=true;
-					break;
+			if ($tags["size"]>0) {
+				foreach ($tags["values"] as $keyTag => $valueTag) {
+					if ($value["id"]==$valueTag["latestCommit"]) {
+						$update->updateCommitAndTagAndPr($until,$repo,$value["id"],$valueTag["displayId"],$prSize);
+						$break=true;
+						break;
+					}
 				}
+			} else {
+				$update->updateCommitAndTagAndPr($until,$repo,$value["id"],"N/A",$prSize);
+				$break=true;
 			}
+			
 			if ($break) {
 				break;
 			}
@@ -302,7 +323,7 @@ elseif (!Empty($_GET["stm"])) {
 	$body_pr = $bitbucket->CreatePR($repo, "CBFF-000: Staging to Master", "staging", "master", $project);
 	$pull_requests = json_decode($body_pr, true);
 
-	$body_get_merge = $bitbucket->GetPR($repo, $pull_requests["id"]);
+	$body_get_merge = $bitbucket->GetPRByID($repo, $pull_requests["id"]);
 	$merge = json_decode($body_get_merge, true);
 	
 	if ($merge)

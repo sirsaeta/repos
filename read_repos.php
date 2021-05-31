@@ -6,7 +6,8 @@
 		<th rowspan=2>Repositorio</th>
 		<th colspan=3>Versión</th>
 		<th rowspan=2>Tipo</th>
-		<th rowspan=2 colspan=4>Acciones</th>
+		<th rowspan=2 colspan=3>Acciones</th>
+		<th rowspan=2>Fecha Verificación</th>
 	</tr>";
 	echo "<tr>
 		<th>Dev</th>
@@ -27,6 +28,7 @@
 				<td><a href='bitbucket_api.php?all=true&repo=".$obj->name."'>Verificar</a></td>
 				<td><a href='promote.php?paso=1&repo=".$obj->name."'>Develop to Staging</a></td>
 				<td><a href='bitbucket_api.php?stm=true&repo=".$obj->name."'>Staging to Master</a></td>
+				<td>".$obj->date_last_verify."</td>
 			</tr>";
 		}
 		/* liberar el conjunto de resultados */

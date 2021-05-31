@@ -66,7 +66,7 @@ if ($PASO==1) {
 	$body_pr = $bitbucket->CreatePR($REPO_NAME, "CBFF-000: Promote_Image Redeploy", "feature/CBFF-000-promote-image", "develop");
 	$pull_requests = json_decode($body_pr, true);
 
-	$body_get_merge = $bitbucket->GetPR($REPO_NAME, $pull_requests["id"]);
+	$body_get_merge = $bitbucket->GetPRByID($REPO_NAME, $pull_requests["id"]);
 	$merge = json_decode($body_get_merge, true);
 	
 	if ($merge)
@@ -88,7 +88,7 @@ if ($PASO==1) {
             $body_pr = $bitbucket->CreatePR($REPO_NAME, "Rollout_Strategy", "develop", "staging");
             $pull_requests = json_decode($body_pr, true);
         
-            $body_get_merge = $bitbucket->GetPR($REPO_NAME, $pull_requests["id"]);
+            $body_get_merge = $bitbucket->GetPRByID($REPO_NAME, $pull_requests["id"]);
             $merge = json_decode($body_get_merge, true);
             
             if ($merge)

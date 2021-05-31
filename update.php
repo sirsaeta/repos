@@ -50,7 +50,7 @@ class UpdateRepo {
 		return $response;
 	}
 
-	function updateCommitAndTag($until,$repoName,$lastCommit,$tag) {
+	function updateCommitAndTagAndPr($until,$repoName,$lastCommit,$tag,$pr) {
 		$response["status"]=true;
 		$response["message"]="";
 		include("coneccion.php");
@@ -63,6 +63,23 @@ class UpdateRepo {
 			$response["status"]=false;
 			$response["message"]=$mysqli->error;
 		}
+
+		$query_string = "UPDATE repository_x_environment t1 
+		INNER JOIN environment t2
+		ON t1.id_environment = t2.id AND t2.name='".$until."'
+		INNER JOIN repositorios t3
+		ON t1.id_repository = t3.id AND t3.name='".$repoName."'
+		SET 
+		t1.last_commit='".$lastCommit."', t1.tag='".$tag."', t1.pr_pending=".$pr."
+		";
+		if (!$mysqli->query($query_string)) {
+			error_log("Errormessage: ");
+			error_log($mysqli->error);
+			var_dump($mysqli->error);
+			$response["status"]=false;
+			$response["message"]=$mysqli->error;
+		}
+		
 		$mysqli->close();
 		return $response;
 	}
