@@ -72,6 +72,9 @@ if ($PASO==1) {
 	if ($merge)
 	{
 		if ($merge["canMerge"]) {
+			$body_delete_branch = $bitbucket->DeleteBranch($REPO_NAME, "feature/CBFF-000-promote-image");
+			$delete_branch = json_decode($body_delete_branch, true);
+            var_dump($delete_branch);
 			$body_merge_pr = $bitbucket->MergePR($REPO_NAME, $pull_requests["id"]);
 			$merge_pr = json_decode($body_merge_pr, true);
             var_dump($merge_pr);

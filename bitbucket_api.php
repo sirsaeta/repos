@@ -27,6 +27,14 @@ class Bitbucket {
 		return $this->cUrlGet("https://bitbucket.telecom.com.ar/rest/api/1.0/projects/".$project."/repos/".$repo."/commits/?until=".$until."&limit=".$limit);
 	}
 
+	function DeleteBranch(string $REPO_NAME = null, $BRANCH_NAME, $project="CBFF")
+	{
+		$data = array("name" => $BRANCH_NAME);
+		$payload = json_encode($data);
+
+		return $this->cUrlDelete("https://bitbucket.telecom.com.ar/rest/branch-utils/latest/projects/$project/repos/$REPO_NAME/branches", $payload);
+	}
+
 	function CreatePR(string $REPO_NAME = null, $PR_TITLE, $FROM_BRANCH, $TO_BRANCH, $project="CBFF")
 	{
 		$data = array(
@@ -186,6 +194,60 @@ class Bitbucket {
 		);
 		$ch = curl_init();
 		curl_setopt($ch, CURLOPT_URL, $url);
+		curl_setopt($ch, CURLOPT_HEADER, TRUE);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+		curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+		$head = curl_exec($ch);
+		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+		curl_close($ch);
+		$respuesta = explode("\n\r\n", $head);
+		$headers = $respuesta[0];
+		$body = $respuesta[1];
+
+		//var_dump($body);
+		
+		if(!$head)
+		{
+			return FALSE;
+		}
+		
+		if($status === null)
+		{
+			if($httpCode < 400)
+			{
+				return $body;
+			}
+			else
+			{
+				return FALSE;
+			}
+		}
+		elseif($status == $httpCode)
+		{
+			return $body;
+		}
+
+		return FALSE;
+	}
+
+	private function cUrlDelete($url, $payload, $headers_add=array(), $status = null)
+	{
+		$headers = array(
+			"Content-Type: application/json",
+			"Cache-Control: no-cache",
+			"Pragma: no-cache",
+			"Authorization: ".$this->getAuthorization()
+		);
+		foreach ($headers_add as $key => $value) {
+			array_push($headers,$value);
+		}
+		
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_URL, $url);
+		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "DELETE");
+		if ($payload) {
+			curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+		}
 		curl_setopt($ch, CURLOPT_HEADER, TRUE);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
 		curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
