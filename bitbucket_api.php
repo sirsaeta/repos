@@ -94,12 +94,10 @@ class Bitbucket {
 		return $this->cUrlPost("https://bitbucket.telecom.com.ar/rest/api/1.0/projects/CBFF/repos/".$REPO_NAME."/pull-requests/".$PR_ID."/merge?version=0",false,$headers);
 	}
 
-	function verify($repo, $project, $until, $limit, $tags) {
+	function verify($repo, $project, $until, $limit, $tags, $dataPR) {
 		$update = new UpdateRepo;
 		$response = $this->getCommitsForOneRepository($repo, $project, $until, $limit);
 		$data = json_decode($response, true);
-		$responsePR = $this->GetPR($repo);
-		$dataPR = json_decode($responsePR, true);
 		$prSize = 0;
 		if (($dataPR ? $dataPR["size"] : 0)>0) {
 			foreach ($dataPR["values"] as $keyPr => $valuePr) {
@@ -361,14 +359,17 @@ elseif (!Empty($_GET["all"])) {
 	$response = $bitbucket->getTagsForOneRepository($repo, $project, 55);
 	$tags = json_decode($response, true);
 
+	$responsePR = $bitbucket->GetPR($repo);
+	$dataPR = json_decode($responsePR, true);
+
 	$until = "develop";
-	$bitbucket->verify($repo, $project, $until, $limit, $tags);
+	$bitbucket->verify($repo, $project, $until, $limit, $tags, $dataPR);
 
 	$until = "staging";
-	$bitbucket->verify($repo, $project, $until, $limit, $tags);
+	$bitbucket->verify($repo, $project, $until, $limit, $tags, $dataPR);
 
 	$until = "master";
-	$bitbucket->verify($repo, $project, $until, $limit, $tags);
+	$bitbucket->verify($repo, $project, $until, $limit, $tags, $dataPR);
 
 	$host  = $_SERVER['HTTP_HOST'];
 	$uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
