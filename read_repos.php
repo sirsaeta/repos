@@ -1,3 +1,9 @@
+<script type="text/javascript">
+    function theFunction (repo) {
+        var branch = prompt("Nombre del banch", "feature/CBFF-000-refactoring");
+		window.location.href = "open_local.php?repo=" + repo + "&branch=" + branch;
+    }
+</script>
 <?php
 	# Check If Record Exists
 	echo "<html><body style='background-color:#E5E8E8'><table border=1>";
@@ -42,6 +48,7 @@
 				<td><a href='promote.php?paso=1&repo=".$obj->name."'>Develop to Staging</a></td>
 				<td><a href='bitbucket_api.php?stm=true&repo=".$obj->name."'>Staging to Master</a></td>
 				<td>".$obj->date_last_verify."</td>
+				<td><button onclick='theFunction(\"$obj->name\")'>Open Code</button></td>
 			</tr>";
 		}
 		/* liberar el conjunto de resultados */
