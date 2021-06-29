@@ -1,7 +1,8 @@
 <script type="text/javascript">
     function theFunction (repo) {
         var branch = prompt("Nombre del banch", "feature/CBFF-000-refactoring");
-		window.location.href = "open_local.php?repo=" + repo + "&branch=" + branch;
+        var ide = prompt("IDE", "idea64.exe");
+		window.location.href = "open_local.php?repo=" + repo + "&branch=" + branch + "&ide=" + ide;
     }
 </script>
 <?php
@@ -26,7 +27,8 @@
 	INNER JOIN repository_type t2 ON t1.type=t2.id
 	INNER JOIN repository_x_environment t3 ON t1.id=t3.id_repository AND t3.id_environment=1
 	INNER JOIN repository_x_environment t4 ON t1.id=t4.id_repository AND t4.id_environment=2
-	INNER JOIN repository_x_environment t5 ON t1.id=t5.id_repository AND t5.id_environment=3";
+	INNER JOIN repository_x_environment t5 ON t1.id=t5.id_repository AND t5.id_environment=3
+	WHERE t1.status=1";
 	/*$query_read = "SELECT t1.*,t2.name as 'name_repo_type', t3.*, t4.name as 'name_environment' 
 	FROM repositorios t1 
 	INNER JOIN repository_type t2 ON t1.type=t2.id
@@ -45,10 +47,11 @@
 				<td style='background-color:".(explode("-", $obj->tag_master)[0]==explode("-", $obj->tag_staging)[0] ? '#48C9B0' : '#EC7063')."'>".$obj->tag_master."</td>
 				<td>".$obj->status."</td>
 				<td><a href='bitbucket_api.php?all=true&repo=".$obj->name."'>Verificar</a></td>
-				<td><a href='promote.php?paso=1&repo=".$obj->name."'>Develop to Staging</a></td>
+				<td><a href='promote.php?paso=2&repo=".$obj->name."'>Develop to Staging</a></td>
 				<td><a href='bitbucket_api.php?stm=true&repo=".$obj->name."'>Staging to Master</a></td>
 				<td>".$obj->date_last_verify."</td>
 				<td><button onclick='theFunction(\"$obj->name\")'>Open Code</button></td>
+				<td><a href='promote.php?paso=4&repo=".$obj->name."'>Redeploy</a></td>
 			</tr>";
 		}
 		/* liberar el conjunto de resultados */

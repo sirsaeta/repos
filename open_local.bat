@@ -4,6 +4,7 @@ cd C:\Users\U631378\Documents\Programas\eCommerce
 SETLOCAL
 SET REPO=%1
 SET branch=%2
+SET ide=%3
 IF exist %REPO% (
     cd %REPO%
     echo %REPO% exist
@@ -20,7 +21,12 @@ IF /I "%branch%" NEQ "" (
     git pull && git checkout -b %branch%
 	echo REPO: %REPO%
 )
-code -g C:\Users\U631378\Documents\Programas\eCommerce\%REPO%
+
+IF /I "%ide%" NEQ "idea64.exe" (
+    idea64.exe C:\Users\U631378\Documents\Programas\eCommerce\%REPO%
+) ELSE (
+    code -g C:\Users\U631378\Documents\Programas\eCommerce\%REPO%
+)
 
 ENDLOCAL
 exit

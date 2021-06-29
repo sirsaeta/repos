@@ -91,7 +91,9 @@ class Bitbucket {
 		$headers = array(
 			"X-Atlassian-Token: no-check"
 		);
-		return $this->cUrlPost("https://bitbucket.telecom.com.ar/rest/api/1.0/projects/CBFF/repos/".$REPO_NAME."/pull-requests/".$PR_ID."/merge?version=0",false,$headers);
+		$url = "https://bitbucket.telecom.com.ar/rest/api/1.0/projects/CBFF/repos/".$REPO_NAME."/pull-requests/".$PR_ID."/merge?version=0";
+		//echo $url;
+		return $this->cUrlPost($url,false,$headers);
 	}
 
 	function verify($repo, $project, $until, $limit, $tags, $dataPR) {
@@ -154,8 +156,15 @@ class Bitbucket {
 		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 		curl_close($ch);
 		$respuesta = explode("\n\r\n", $head);
+		//var_dump($respuesta);
+		//echo "<br>";
 		$headers = $respuesta[0];
-		$body = $respuesta[1];
+		if (count($respuesta)==3) {
+			$body = $respuesta[2];
+		} else {
+			$body = $respuesta[1];
+		}
+		
 
 		//var_dump($body);
 		
@@ -383,36 +392,49 @@ elseif (!Empty($_GET["stm"])) {
 	$project = $_GET["project"] ?? "CBFF";
 	$bitbucket = new Bitbucket;
 
-	$body_pr = $bitbucket->CreatePR($repo, "CBFF-000: Staging to Master", "staging", "master", $project);
-	$pull_requests = json_decode($body_pr, true);
+	$body_pr = $bitbucket->CreatePR($repo, "Rollout_Strategy", "staging", "master", $project);
+	//var_dump($body_pr);
+	if ($body_pr) {
+		$pull_requests = json_decode($body_pr, true);
+		//var_dump($pull_requests);
 
-	$body_get_merge = $bitbucket->GetPRByID($repo, $pull_requests["id"]);
-	$merge = json_decode($body_get_merge, true);
-	
-	if ($merge)
-	{
-		if ($merge["canMerge"]) {
-			$body_merge_pr = $bitbucket->MergePR($repo, $pull_requests["id"]);
-			$merge_pr = json_decode($body_merge_pr, true);
-			
-			$host  = $_SERVER['HTTP_HOST'];
-			$uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
-			// $extra = 'index.php';
-			// header("Location: http://$host$uri/$extra");
-			header("Location: http://$host$uri/");
+		$body_get_merge = $bitbucket->GetPRByID($repo, $pull_requests["id"]);
+		$merge = json_decode($body_get_merge, true);
+		
+		if ($merge)
+		{
+			if ($merge["canMerge"]) {
+				sleep(1);
+				$body_merge_pr = $bitbucket->MergePR($repo, $pull_requests["id"]);
+				$merge_pr = json_decode($body_merge_pr, true);
+				
+				sleep(1);
+				$host  = $_SERVER['HTTP_HOST'];
+				$uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
+				// $extra = 'index.php';
+				// header("Location: http://$host$uri/$extra");
+				header("Location: http://$host$uri/");
+			}
+			else {
+				echo "====================================== [ERROR 2] ==============================================";
+				echo "CANNOT MERGE THE PR #".$pull_requests['id']." FOR ".$repo.". PLEASE, CHECK IT OUT AND FIX: ";
+				echo "<a target='_blank' href='https://bitbucket.telecom.com.ar/projects/CBFF/repos/".$repo."/pull-requests/".$pull_requests['id']."/overview' >https://bitbucket.telecom.com.ar/projects/CBFF/repos/".$repo."/pull-requests/".$pull_requests['id']."/overview</a>";
+				echo "=============================================================================================";
+			}
 		}
 		else {
-			echo "====================================== [ERROR 2] ==============================================";
+			echo "====================================== [ERROR] ==============================================";
 			echo "CANNOT MERGE THE PR #".$pull_requests['id']." FOR ".$repo.". PLEASE, CHECK IT OUT AND FIX: ";
-			echo "https://bitbucket.telecom.com.ar/projects/CBFF/repos/".$repo."/pull-requests/".$pull_requests['id']."/overview";
+			echo "<a target='_blank' href='https://bitbucket.telecom.com.ar/projects/CBFF/repos/".$repo."/pull-requests/".$pull_requests['id']."/overview' >https://bitbucket.telecom.com.ar/projects/CBFF/repos/".$repo."/pull-requests/".$pull_requests['id']."/overview</a>";
 			echo "=============================================================================================";
 		}
 	}
 	else {
-		echo "====================================== [ERROR] ==============================================";
-		echo "CANNOT MERGE THE PR #".$pull_requests['id']." FOR ".$repo.". PLEASE, CHECK IT OUT AND FIX: ";
-		echo "https://bitbucket.telecom.com.ar/projects/CBFF/repos/".$repo."/pull-requests/".$pull_requests['id']."/overview";
-		echo "=============================================================================================";
+		echo "====================================== [ERROR CREATE PR] ==============================================<br>";
+		echo "CANNOT CREATE THE PR  FOR ".$repo.". PLEASE, CHECK IT OUT AND FIX: <br>";
+		echo "<a href='https://bitbucket.telecom.com.ar/projects/CBFF/repos/".$repo."/pull-requests'>https://bitbucket.telecom.com.ar/projects/CBFF/repos/".$repo."/pull-requests</a><br>";
+		echo "=============================================================================================<br>";
 	}
+	
 	exit;
 }
