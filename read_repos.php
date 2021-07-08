@@ -7,7 +7,9 @@
 </script>
 <?php
 	# Check If Record Exists
-	echo "<html><body style='background-color:#E5E8E8'><table border=1>";
+	echo "<html><body style='background-color:#E5E8E8'>";
+	//echo "<div><img alt='mensaje' src='mensaje.png' /></div>";
+	echo "<table border=1>";
 	echo "<tr>
 		<th rowspan=2>Id</th>
 		<th rowspan=2>Repositorio</th>
