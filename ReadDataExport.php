@@ -239,6 +239,64 @@ class ReadDataExport {
         }
         echo "</table>";
 	}
+    
+    function GetPurchasesNoLegacy(string $type)
+    {
+        $data = $this->getAll("purchaseNoLegacy");
+        echo "<table border=1 style='width: -webkit-fill-available;'>";
+        echo "<tr>";
+        echo "<th>#</th>";
+        echo "<th>id</th>";
+        echo "<th>find</th>";
+        echo "<th>update</th>";
+        echo "<th>creationDate</th>";
+        echo "<th>getOrderStatus</th>";
+        echo "<th>documentNumber</th>";
+        echo "<th>contact name</th>";
+        echo "<th>codeNMU</th>";
+        echo "<th>productCode</th>";
+        echo "<th>slug</th>";
+        echo "<th>product name</th>";
+        echo "<th>status</th>";
+        echo "</tr>";
+        foreach ($data as $key => $value) {
+            if ($value["flow"]==$type) {
+                //print_r($value);
+                echo "<tr>";
+                echo "<td>$key</td>";
+                echo "<td>".$value['id']."</td>";
+                echo "<td>db.purchase.find({id:\"".$value['id']."\"}).pretty()</td>";
+	            echo "<td>db.purchase.update({id:\"".$value['id']."\"},{\$set: {legacyId:\"".$value['id']."-v".$value['version']."\"}})</td>";
+                echo "<td>".$value['creationDate']['$date']."</td>";
+                echo "<td><a href='http://localhost/repos/Sales_Foce_api.php?getOrderStatus=true&idPurchase=".urlencode($value['id'])."' target='_blank' >getOrderStatus</a></td>";
+                echo "<td>".$value['documentNumber']."</td>";
+                echo "<td>".$value['contact']['name']." ".$value['contact']['surname']."</td>";
+                if (!Empty($value['products'][0]['offering']['productSpecification'])) {
+                    echo "<td>".$value['products'][0]['offering']['codeNMU']."</td>";
+                    echo "<td>".$value['products'][0]['offering']['productCode']."</td>";
+                    echo "<td>".$value['products'][0]['offering']['slug']."</td>";
+                    echo "<td>".$value['products'][0]['offering']['productSpecification']['name']."</td>";
+                }
+                elseif (!Empty($value['products'][0]['offering']['products'])) {
+                    echo "<td>".$value['products'][0]['offering']['codeNMU']."</td>";
+                    echo "<td>".$value['products'][0]['offering']['productCode']."</td>";
+                    echo "<td>".$value['products'][0]['offering']['slug']."</td>";
+                    echo "<td>".$value['products'][0]['offering']['products'][0]['productSpecification']['name']."</td>";
+                }
+                else {
+                    echo "<td></td>";
+                    echo "<td></td>";
+                    echo "<td></td>";
+                    echo "<td></td>";
+                }
+                echo "<td>";
+                    print_r(json_encode($value['status']));
+                echo"</td>";
+                echo "</tr>";
+            }
+        }
+        echo "</table>";
+    }
 }
 
 if (!Empty($_GET["allData"])) {
@@ -273,4 +331,9 @@ elseif (!Empty($_GET["allPurchaseFull"])) {
     $type = $_GET["type"] ?? "FULL";
 	$clase = new ReadDataExport;
 	$clase->GetPurchases($type);
+}
+elseif (!Empty($_GET["allPurchaseFullNoLegacy"])) {
+    $type = $_GET["type"] ?? "FULL";
+	$clase = new ReadDataExport;
+	$clase->GetPurchasesNoLegacy($type);
 }

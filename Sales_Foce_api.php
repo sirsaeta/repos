@@ -34,14 +34,69 @@ class Sales_Force {
 		}
 	}
 
+	private function RefreshTokenIDP(array $oldToken)
+    {
+		$dataPayload = array("grant_type"=>$oldToken['grant_type']);
+		$payloadToken = json_encode($dataPayload);
+		$curl = curl_init();
+
+		curl_setopt_array($curl, array(
+			CURLOPT_URL => 'https://sesiont.telecom.com.ar/openam/oauth2/access_token?realm=%2Fauthappext',
+			CURLOPT_RETURNTRANSFER => true,
+			CURLOPT_ENCODING => '',
+			CURLOPT_MAXREDIRS => 10,
+			CURLOPT_TIMEOUT => 0,
+			CURLOPT_FOLLOWLOCATION => true,
+			CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+			CURLOPT_CUSTOMREQUEST => 'POST',
+			CURLOPT_POSTFIELDS => 'grant_type='.$oldToken['grant_type'],
+			CURLOPT_USERPWD => $oldToken['username'] . ":" . $oldToken['password'],
+		));
+		$result = curl_exec($curl);
+
+		curl_close($curl);
+		
+		$jsonDataToken = json_decode($result, true);
+		$data = array(
+			"url" => $oldToken['url'],
+			"username" => $oldToken['username'],
+			"password" => $oldToken['password'],
+			"grant_type" => $oldToken['grant_type'],
+			"expires_time" => $oldToken['expires_time'],
+			"access_token" => $jsonDataToken['access_token'],
+			"scope" => $jsonDataToken['scope'],
+			"id_token" => $jsonDataToken['id_token'],
+            "token_type" => $jsonDataToken['token_type'],
+            "expires_in" => $jsonDataToken['expires_in'],
+            "expires_date" => $this->microtime_float() + $oldToken['expires_time'] * 1000
+        );
+		$payload = json_encode($data);
+        file_put_contents("token_buscar_purchase.json",$payload);
+        return $data;
+	}
+    
+    public function microtime_float()
+    {
+        list($usec, $sec) = explode(" ", microtime());
+        return ((float)$usec + (float)$sec)*1000;
+    }
+
 	public function GetPurchaseByID(string $idPurchase)
 	{
+		$dataToken = file_get_contents("token_buscar_purchase.json");
+		$jsonDataToken = json_decode($dataToken, true);
+		if($this->microtime_float() > (float)$jsonDataToken['expires_date'])
+            $jsonDataToken = $this->RefreshTokenIDP($jsonDataToken);
 		$data = array();
 		$payload = json_encode($data);
-		$headers = array();
-		$url = "https://xi5edmsqa2.execute-api.us-east-1.amazonaws.com/v1/purchase/$idPurchase";
+		$headers = array(
+			"Authorization: Bearer ".$jsonDataToken['id_token'],
+			"Host: obh7dz57rd.execute-api.us-east-1.amazonaws.com",
+			"User-Agent: PostmanRuntime/7.28.1",
+			"Postman-Token: fbdb5815-f562-47c6-9e9c-16186575454e");
+		$url = "https://obh7dz57rd.execute-api.us-east-1.amazonaws.com/v1/purchase/$idPurchase";
 
-		return $this->cUrlPost($url, $payload,$headers);
+		return $this->cUrlGet($url, null,$headers);
 	}
 
 	public function GetStockByProductCode(string $productCode)
@@ -94,7 +149,7 @@ class Sales_Force {
 		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 		curl_close($ch);
 		$respuesta = explode("\n\r\n", $head);
-		//var_dump($respuesta);
+		var_dump($respuesta);
 		//echo "<br>";
 		$headers = $respuesta[0];
 		if (count($respuesta)==3) {
@@ -293,7 +348,7 @@ if (!Empty($_GET["getOrderStatus"])) {
 	echo "<td>".$data['id']."</td>";
 	echo "<td>".$data['requestedStatus']['name']."</td>";
 	echo "<td>".$data['currentStatus']['name']."</td>";
-	echo "<td>".$data['vlOrder']['TrackingStatus__c']."</td>";
+	echo "<td>".($data['vlOrder'] ? $data['vlOrder']['TrackingStatus__c'] : "")."</td>";
 	echo "<td>".$dataPurchase['id']."</td>";
 	echo "<td>".$dataPurchase['version']."</td>";
 	echo "<td>".$dataPurchase['documentNumber']."</td>";
@@ -340,7 +395,7 @@ if (!Empty($_GET["getOrderStatus"])) {
 		if (!$isDespachado && !$isCompleted) {
 			echo "<br><br><a href='http://localhost/repos/Sales_Foce_api.php?sendStatusCommentID=true&externalId=".urlencode($idPurchase)."&id=".$data["id"]."&currentStatusName=Despachado&requestedStatusName=Despachado'>Enviar Despachado</a>";
 		}
-		if (!$isCompleted && $data['vlOrder']['TrackingStatus__c']=="Entregado" && $data['currentStatus']['name']=="Completed" && $data['requestedStatus']['name']=="Completed") {
+		if (!$isCompleted && $data['vlOrder'] ? $data['vlOrder']['TrackingStatus__c'] : ""=="Entregado" && $data['currentStatus']['name']=="Completed" && $data['requestedStatus']['name']=="Completed") {
 			echo "<br><br><a href='http://localhost/repos/Sales_Foce_api.php?sendStatusCommentID=true&externalId=".urlencode($idPurchase)."&id=".$data["id"]."&currentStatusName=Completed&requestedStatusName=Completed'>Enviar Completed</a>";
 		}
 	}
