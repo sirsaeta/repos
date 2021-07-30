@@ -1,5 +1,5 @@
 <?php
-
+date_default_timezone_set("America/Argentina/Buenos_Aires");
 class ReadDataExport {
 
 	function getAll(string $file) {
@@ -204,6 +204,126 @@ class ReadDataExport {
         echo "</table>";
     }
 
+    function GetPurchasesReport(string $type)
+    {
+        $data = $this->getAll("purchase");
+        echo "<table border=1 style='width: -webkit-fill-available;'>";
+        echo "<tr>";
+        echo "<th nowrap='nowrap'>Orden</th>";
+        echo "<th nowrap='nowrap'>Fecha de Creacion</th>";
+        echo "<th nowrap='nowrap'>Nombre</th>";
+        echo "<th nowrap='nowrap'>Apellido</th>";
+        echo "<th nowrap='nowrap'>Nro de documento</th>";
+        echo "<th nowrap='nowrap'>Email</th>";
+        echo "<th nowrap='nowrap'>Tel de contacto</th>";
+        echo "<th nowrap='nowrap'>Tipo de envio</th>";
+        echo "<th nowrap='nowrap'>Costo de envio</th>";
+        echo "<th nowrap='nowrap'>Bonificacion de envio</th>";
+        echo "<th nowrap='nowrap'>Provincia</th>";
+        echo "<th nowrap='nowrap'>Localidad</th>";
+        echo "<th nowrap='nowrap'>Calle</th>";
+        echo "<th nowrap='nowrap'>Altura</th>";
+        echo "<th nowrap='nowrap'>Adicional domicilio</th>";
+        echo "<th nowrap='nowrap'>Codigo Postal</th>";
+        echo "<th nowrap='nowrap'>Nombre autorizado</th>";
+        echo "<th nowrap='nowrap'>DNI autorizado</th>";
+        echo "<th nowrap='nowrap'>Medio de pago</th>";
+        echo "<th nowrap='nowrap'>Tipo de tarjeta</th>";
+        echo "<th nowrap='nowrap'>Total a pagar</th>";
+        echo "<th nowrap='nowrap'>Cantidad de productos</th>";
+        echo "<th nowrap='nowrap'>Codigo NMU</th>";
+        echo "<th nowrap='nowrap'>SKU Name</th>";
+        echo "<th nowrap='nowrap'>Codigo de Promo</th>";
+        echo "<th nowrap='nowrap'>Promocion</th>";
+        echo "<th nowrap='nowrap'>Estado</th>";
+        echo "<th nowrap='nowrap'>Subestado</th>";
+        echo "<th nowrap='nowrap'>Estado previo</th>";
+        echo "<th nowrap='nowrap'>Ultima actualización</th>";
+        echo "<th nowrap='nowrap'>Modelo de venta</th>";
+        echo "</tr>";
+        foreach ($data as $key => $value) {
+            if ($value["flow"]==$type) {
+                //print_r($value);
+                echo "<tr>";
+                echo "<td nowrap='nowrap'>".(!Empty($_GET["legacyId"]) ? $value['legacyId'] : $value['id']."-v".$value['version'])."</td>";
+                echo "<td nowrap='nowrap'>".date("Y-m-d H:i:s", strtotime($value['creationDate']['$date']))."</td>";
+                echo "<td nowrap='nowrap'>".$value['contact']['name']."</td>";
+                echo "<td nowrap='nowrap'>".$value['contact']['surname']."</td>";
+                echo "<td nowrap='nowrap'>".$value['documentNumber']."</td>";
+                echo "<td nowrap='nowrap'>".$value['contact']['email']."</td>";
+                echo "<td nowrap='nowrap'>'".$value['contact']['countryCode']." ".$value['contact']['zoneCode']." ".$value['contact']['phone']."</td>";
+                echo "<td nowrap='nowrap'>".($value['delivery'] ? 'A domicilio' : "")."</td>";
+                echo "<td nowrap='nowrap'>".($value['delivery'] ? '0' : "")."</td>";
+                echo "<td nowrap='nowrap'>".($value['delivery'] ? '0' : "")."</td>";
+                echo "<td nowrap='nowrap'>".($value['delivery'] ? $value['delivery']['stateOrProvince'] : "")."</td>";
+                echo "<td nowrap='nowrap'>".($value['delivery'] ? $value['delivery']['locality'] : "")."</td>";
+                echo "<td nowrap='nowrap'>".($value['delivery'] ? $value['delivery']['streetName'] : "")."</td>";
+                echo "<td nowrap='nowrap'>".($value['delivery'] ? !Empty($value['delivery']['streetNumber']) ? $value['delivery']['streetNumber'] : "" : "")."</td>";
+                echo "<td nowrap='nowrap'>".($value['delivery'] ? !Empty($value['delivery']['additionalInformation']) ? $value['delivery']['additionalInformation'] : "" : "")."</td>";
+                echo "<td nowrap='nowrap'>".($value['delivery'] ? $value['delivery']['postCode'] : "")."</td>";
+                echo "<td nowrap='nowrap'>".($value['delivery'] ? $value['delivery']['receiver'] ? $value['delivery']['receiver']['fullName']:"":"")."</td>";
+                echo "<td nowrap='nowrap'>".($value['delivery'] ? $value['delivery']['receiver'] ? !Empty($value['delivery']['receiver']['documentNumber']) ? $value['delivery']['receiver']['documentNumber'] :"":"":"")."</td>";
+                echo "<td nowrap='nowrap'>".($value['payment'] ? "TC":"")."</td>";
+                echo "<td nowrap='nowrap'>".($value['payment'] ? $value['payment']['cardType']:"")."</td>";
+                if ($value['products'][0]['offering']['type']==='Product') {
+                    echo "<td nowrap='nowrap'>"."1"."</td>";
+                    if ($value['flow']=='FULL') {
+                        echo "<td nowrap='nowrap'>".($value['payment'] ? $value['payment']['promotion']['ptf']:"")."</td>";
+                    } else {
+                        echo "<td nowrap='nowrap'>".($value['products'][0]['offering']['productPrice'][0]['price']['taxIncludedChargeAmount'])."</td>";
+                    }
+                    echo "<td nowrap='nowrap'>".$value['products'][0]['offering']['codeNMU']."</td>";
+                    echo "<td nowrap='nowrap'>".$value['products'][0]['offering']['productSpecification']['name']."</td>";
+                    echo "<td nowrap='nowrap'>".""."</td>";
+                    echo "<td nowrap='nowrap'>".""."</td>";
+                }
+                elseif ($value['products'][0]['offering']['type']==='Promotion') {
+                    echo "<td nowrap='nowrap'>"."1"."</td>";
+                    if ($value['flow']=='FULL') {
+                        echo "<td nowrap='nowrap'>".($value['payment'] ? $value['payment']['promotion']['ptf']:"")."</td>";
+                    } else {
+                        echo "<td nowrap='nowrap'>".($value['products'][0]['offering']['productPrice'][0]['price']['taxIncludedChargeAmount'])."</td>";
+                    }
+                    echo "<td nowrap='nowrap'>".$value['products'][0]['offering']['codeNMU']."</td>";
+                    echo "<td nowrap='nowrap'>".$value['products'][0]['offering']['products'][0]['productSpecification']['name']."</td>";
+                    echo "<td nowrap='nowrap'>".$value['products'][0]['offering']['promotionCode']."</td>";
+                    echo "<td nowrap='nowrap'>".$value['products'][0]['offering']['name']."</td>";
+                }
+                else {
+                    echo "<td nowrap='nowrap'>"."1"."</td>";
+                    if ($value['flow']=='FULL') {
+                        echo "<td nowrap='nowrap'>".($value['payment'] ? $value['payment']['promotion']['ptf']:"")."</td>";
+                    } else {
+                        echo "<td nowrap='nowrap'>".($value['products'][0]['offering']['productPrice'][0]['price']['taxIncludedChargeAmount'])."</td>";
+                    }
+                    echo "<td nowrap='nowrap'></td>";
+                    echo "<td nowrap='nowrap'></td>";
+                    echo "<td nowrap='nowrap'></td>";
+                    echo "<td nowrap='nowrap'></td>";
+                }
+                $status = "";
+                $substatus = "";
+                $ultimaActualizacion = "";
+                foreach ($value['status'] as $key => $value) {
+                    $status = $status.($status=="" ? "" : "<br>").(!Empty($value["status"]) ? $value['status'] : "-");
+                    $substatus = $substatus.($substatus=="" ? "" : "<br>").(!Empty($value["substatus"]) ? $value['substatus'] : "-");
+                    $ultimaActualizacion = $value['date']['$date'];
+                }
+                if ($ultimaActualizacion!="") {
+                    $date = strtotime($ultimaActualizacion);
+                    $ultimaActualizacion = date("Y-m-d H:i:s", $date);
+                }
+                echo "<td nowrap='nowrap'>".$status."</td>";
+                echo "<td nowrap='nowrap'>".$substatus."</td>";
+                echo "<td nowrap='nowrap'></td>";
+                echo "<td nowrap='nowrap'>".$ultimaActualizacion."</td>";
+                echo "<td nowrap='nowrap'>".(!Empty($value["flow"]) ? $value['flow'] : "")."</td>";
+                echo "</tr>";
+            }
+        }
+        echo "</table>";
+    }
+
 	function getStock()
 	{
         $data = $this->getAll("productStock");
@@ -336,4 +456,9 @@ elseif (!Empty($_GET["allPurchaseFullNoLegacy"])) {
     $type = $_GET["type"] ?? "FULL";
 	$clase = new ReadDataExport;
 	$clase->GetPurchasesNoLegacy($type);
+}
+elseif (!Empty($_GET["purchaseReport"])) {
+    $type = $_GET["type"] ?? "FULL";
+	$clase = new ReadDataExport;
+	$clase->GetPurchasesReport($type);
 }

@@ -1,0 +1,1 @@
+db.productStock.find({productCode:"FAN_PRD_EM_00756"}).pretty()

@@ -34,6 +34,29 @@ class Sales_Force {
 		}
 	}
 
+	public function GetOrderByIDInParse(string $idPurchase)
+	{
+		$dataOrder = file_get_contents("OrderParse/$idPurchase.json");
+		$order = json_decode($dataOrder, true);
+		if ($order==NULL) {
+			$dataOrder = file_get_contents("OrderParse/".substr($idPurchase,0,24).".json");
+			$order = json_decode($dataOrder, true);
+		}
+		return $order;
+		print_r(json_encode($order['originalSubmitOrderRequest'], JSON_UNESCAPED_UNICODE));
+	}
+
+	public function GetOrderByIDInParseAPI(string $idPurchase)
+	{
+		$dataOrder = file_get_contents("OrderParse/$idPurchase.json");
+		$order = json_decode($dataOrder, true);
+		if ($order=="null") {
+			$dataOrder = file_get_contents("OrderParse/".substr($idPurchase,0,24).".json");
+			$order = json_decode($dataOrder, true);
+		}
+		return $dataOrder;
+	}
+
 	private function RefreshTokenIDP(array $oldToken)
     {
 		$dataPayload = array("grant_type"=>$oldToken['grant_type']);
@@ -41,7 +64,7 @@ class Sales_Force {
 		$curl = curl_init();
 
 		curl_setopt_array($curl, array(
-			CURLOPT_URL => 'https://sesiont.telecom.com.ar/openam/oauth2/access_token?realm=%2Fauthappext',
+			CURLOPT_URL => 'https://idpsesion.telecom.com.ar/openam/oauth2/realms/authserver/access_token',
 			CURLOPT_RETURNTRANSFER => true,
 			CURLOPT_ENCODING => '',
 			CURLOPT_MAXREDIRS => 10,
@@ -68,7 +91,7 @@ class Sales_Force {
 			"id_token" => $jsonDataToken['id_token'],
             "token_type" => $jsonDataToken['token_type'],
             "expires_in" => $jsonDataToken['expires_in'],
-            "expires_date" => $this->microtime_float() + $oldToken['expires_time'] * 1000
+            "expires_date" => $this->microtime_float() + $oldToken['expires_in']
         );
 		$payload = json_encode($data);
         file_put_contents("token_buscar_purchase.json",$payload);
@@ -109,11 +132,16 @@ class Sales_Force {
 		return $this->cUrlGet("https://api.store.personal.com.ar/stock/$productCode",null,$headers);
 	}
 
-	function sendStatusCommentID(string $id, string $externalId, $currentStatusName, $requestedStatusName)
+	function sendStatusCommentID(string $id, string $externalId, $currentStatusName, $requestedStatusName,$TrackingStatus__c)
 	{
 		$data = array(
 			"TecoOrderJson__c" => "{\"id\":\"$id\",\"externalId\":\"$externalId\",\"currentStatus\": {\"name\":\"$currentStatusName\"},\"requestedStatus\": {\"name\":\"$requestedStatusName\"}}"
 		);
+		if ($TrackingStatus__c=='Despachado') {
+			$data = array(
+				"TecoOrderJson__c" => "{\"id\":\"$id\",\"externalId\":\"$externalId\",\"currentStatus\": {\"name\":\"$currentStatusName\"},\"requestedStatus\": {\"name\":\"$requestedStatusName\"},\"vlOrder\":{\"TrackingStatus__c\":\"$TrackingStatus__c\"}}"
+			);
+		}
 		$payload = json_encode($data);
 		$headers = array(
 			"Cookie: BrowserId=6qKoFWJWEeuYCZGv0C6kSw",
@@ -293,6 +321,7 @@ if (!Empty($_GET["getOrderStatus"])) {
 	$isCompleted = false;
 	$isInProgress = false;
 	$isDespachado = false;
+	$dateInProgress = "";
 	$salesforce = new Sales_Force;
 	$response = $salesforce->getOrderStatus($idPurchase);
 	$data = json_decode($response, true);
@@ -329,6 +358,8 @@ if (!Empty($_GET["getOrderStatus"])) {
 	echo "<tr>";
 	echo "<th colspan=4>"."FAN"."</th>";
 	echo "<th colspan=7>"."PURCHASE"."</th>";
+	echo "<th rowspan=2>"."ORDER"."</th>";
+	echo "<th rowspan=2>"."PARECE"."</th>";
 	echo "<th rowspan=2>"."ACCION"."</th>";
 	echo "</tr>";
 	echo "<tr>";
@@ -352,11 +383,14 @@ if (!Empty($_GET["getOrderStatus"])) {
 	echo "<td>".$dataPurchase['id']."</td>";
 	echo "<td>".$dataPurchase['version']."</td>";
 	echo "<td>".$dataPurchase['documentNumber']."</td>";
+	$productCode = "";
 	if (!Empty($dataPurchase['products'][0]['offering']['productSpecification'])) {
+		$productCode = $dataPurchase['products'][0]['offering']['productCode'];
 		echo "<td>".$dataPurchase['products'][0]['offering']['productCode']."</td>";
 		echo "<td>".$dataPurchase['products'][0]['offering']['slug']."</td>";
 	}
 	elseif (!Empty($dataPurchase['products'][0]['offering']['products'])) {
+		$productCode = $dataPurchase['products'][0]['offering']['productCode'];
 		echo "<td>".$dataPurchase['products'][0]['offering']['productCode']."</td>";
 		echo "<td>".$dataPurchase['products'][0]['offering']['slug']."</td>";
 	}
@@ -384,17 +418,38 @@ if (!Empty($_GET["getOrderStatus"])) {
 			}
 			elseif ($subStatus=="CRM - InProgress") {
 				$isInProgress=true;
+				$dateInProgress = $value['date'];
 			}
 		}
 	echo"</td>";
+	echo "<td>";
+		$orderStatic = $salesforce->GetOrderByIDInParse($idPurchase);
+		
+		echo "<br>";
+		$dateOrderDespachado = "";
+		foreach ($orderStatic['statusHistory'] as $key => $value) {
+			echo "createdAt: ".$value["createdAt"]['$date']."<br>";
+			echo "status: ".$value["status"]."<br>";
+			echo "currentStatus: ".$value["eventData"]["currentStatus"]["name"]."<br>";
+			echo "requestedStatus: ".$value["eventData"]["requestedStatus"]["name"]."<br>";
+			echo "TrackingStatus__c: ".$value["eventData"]["vlOrder"]["TrackingStatus__c"]."<br>";
+			echo "<br>";
+			echo "<br>";
+			if ($value["eventData"]["vlOrder"]["TrackingStatus__c"]=="Despachado") {
+				$dateOrderDespachado = $value["createdAt"]['$date'];
+			}
+		}
+		echo "<br>";
+	echo "</td>";
+	echo "<td>".(substr($dateInProgress,0,13)==substr($dateOrderDespachado,0,13) ? "SI" : "NO")."</td>";
 	echo "<td>";
 	if (!Empty($data["id"])) {
 		if (!$isInProgress && !$isDespachado && !$isCompleted) {
 			echo "<br><a href='http://localhost/repos/Sales_Foce_api.php?sendStatusCommentID=true&externalId=".urlencode($idPurchase)."&id=".$data["id"]."'>Enviar InProgress</a>";
 		}
-		if (!$isDespachado && !$isCompleted) {
-			echo "<br><br><a href='http://localhost/repos/Sales_Foce_api.php?sendStatusCommentID=true&externalId=".urlencode($idPurchase)."&id=".$data["id"]."&currentStatusName=Despachado&requestedStatusName=Despachado'>Enviar Despachado</a>";
-		}
+		//if (!$isDespachado && !$isCompleted) {
+			echo "<br><br><a href='http://localhost/repos/Sales_Foce_api.php?sendStatusCommentID=true&externalId=".urlencode($idPurchase)."&id=".$data["id"]."&currentStatusName=InProgress&requestedStatusName=InProgress&TrackingStatus__c=Despachado'>Enviar Despachado</a>";
+		//}
 		if (!$isCompleted && $data['vlOrder'] ? $data['vlOrder']['TrackingStatus__c'] : ""=="Entregado" && $data['currentStatus']['name']=="Completed" && $data['requestedStatus']['name']=="Completed") {
 			echo "<br><br><a href='http://localhost/repos/Sales_Foce_api.php?sendStatusCommentID=true&externalId=".urlencode($idPurchase)."&id=".$data["id"]."&currentStatusName=Completed&requestedStatusName=Completed'>Enviar Completed</a>";
 		}
@@ -404,9 +459,18 @@ if (!Empty($_GET["getOrderStatus"])) {
 	echo "</table>";
 	echo "<br><br><a href='http://localhost/repos/Sales_Foce_api.php?getOrderStatus=true&idPurchase=".urlencode($dataPurchase['id']."-v".$dataPurchase['version'])."'>Actualizar</a><br><br>";
 	echo $dataPurchase['id']."-v".$dataPurchase['version']."<br><br>";
+	echo "db.productOrders.find({externalId:\"".$dataPurchase['id']."-v".$dataPurchase['version']."\"}).pretty()<br><br>";
 	echo "db.purchase.find({id:\"".$dataPurchase['id']."\"}).pretty()<br><br>";
 	echo "db.purchase.update({id:\"".$dataPurchase['id']."\"},{\$set: {legacyId:\"".$dataPurchase['id']."-v".$dataPurchase['version']."\"}})<br><br>";
-	$salesforce->GetOrderByID($idPurchase);
+	//$salesforce->GetOrderByID($idPurchase);
+	echo "db.purchase.update({id:\"".$dataPurchase['id']."\"},{\$set: {legacyId:\"".$dataPurchase['id']."-v".$dataPurchase['version']."\"}})<br><br>";
+	echo "<br><br>";
+	echo "db.productStock.find({productCode:\"".$productCode."\"}).pretty()";
+	echo "<br><br>";
+	echo "db.productStock.update({productCode:\"".$productCode."\"},{\$set:{\"productInventory\" : {\"recognized\" : 0,\"available\" : 1,\"reserved\" : 38}}});";
+	echo "<br><br>";
+	echo "db.getCollection('productOrders').insertOne({\"externalId\":\"".$dataPurchase['id']."-v".$dataPurchase['version']."\",\"originalSubmitOrderRequest\":{\"baseType\":\"Order\",\"type\":\"ProductOrder\",\"category\":\"NEW\",\"externalId\":\"".$dataPurchase['id']."-v".$dataPurchase['version']."\",\"requestedStartDate\":\"2021-07-19 12:00:00\",\"channel\":{\"name\":\"WEB\"},\"orderItems\":[{\"action\":\"Add\",\"objectItem\":{\"type\":\"Product\",\"sequence\":\"00001\",\"productSpecification\":{\"name\":\"Reproceso Manual por Bug\",\"code\":\"$productCode\",\"baseType\":\"Telecom\"},\"code\":\"$productCode\"}}]}});";
+
 	exit;
 }
 elseif (!Empty($_GET["sendStatusCommentID"])) {
@@ -414,8 +478,9 @@ elseif (!Empty($_GET["sendStatusCommentID"])) {
 	$externalId = (Empty($_GET["externalId"])) ? die("externalId es obligatorio") : $_GET["externalId"];
     $currentStatusName = $_GET["currentStatusName"] ?? "InProgress";
     $requestedStatusName = $_GET["requestedStatusName"] ?? "InProgress";
+	$TrackingStatus__c =  $_GET["TrackingStatus__c"] ?? "";
 	$salesforce = new Sales_Force;
-	$response = $salesforce->sendStatusCommentID($id, $externalId, $currentStatusName, $requestedStatusName);
+	$response = $salesforce->sendStatusCommentID($id, $externalId, $currentStatusName, $requestedStatusName,$TrackingStatus__c);
 	//$data = json_decode($response, true);
 	//var_dump($data);
 	$host  = $_SERVER['HTTP_HOST'];
@@ -433,3 +498,15 @@ elseif (!Empty($_GET["getOrderByID"])) {
 	//var_dump($data);
 	exit;
 }
+elseif (!Empty($_GET["getOrderByIDAPI"])) {
+	$idPurchase = (Empty($_GET["idPurchase"])) ? die("idPurchase es obligatorio") : $_GET["idPurchase"];
+	$salesforce = new Sales_Force;
+	print_r($salesforce->GetOrderByIDInParseAPI($idPurchase));
+}
+elseif (!Empty($_GET["getOrderByIDAPI"])) {
+	$idPurchase = (Empty($_GET["idPurchase"])) ? die("idPurchase es obligatorio") : $_GET["idPurchase"];
+	$salesforce = new Sales_Force;
+	print_r($salesforce->GetOrderByIDInParseAPI($idPurchase));
+}
+// $responseStock = $salesforce->GetStockByProductCode($dataPurchase['products'][0]['offering']['productCode']);
+// $dataStock = json_decode($responseStock, true);
