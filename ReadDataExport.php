@@ -204,7 +204,7 @@ class ReadDataExport {
         echo "</table>";
     }
 
-    function GetPurchasesReport(string $type)
+    function GetPurchasesReport(string $type, string $date)
     {
         $data = $this->getAll("purchase");
         echo "<table border=1 style='width: -webkit-fill-available;'>";
@@ -242,7 +242,7 @@ class ReadDataExport {
         echo "<th nowrap='nowrap'>Modelo de venta</th>";
         echo "</tr>";
         foreach ($data as $key => $value) {
-            if ($value["flow"]==$type) {
+            if ($value["flow"]==$type && substr($value['creationDate']['$date'],0,10)==$date) {
                 //print_r($value);
                 echo "<tr>";
                 echo "<td nowrap='nowrap'>".(!Empty($_GET["legacyId"]) ? $value['legacyId'] : $value['id']."-v".$value['version'])."</td>";
@@ -459,6 +459,7 @@ elseif (!Empty($_GET["allPurchaseFullNoLegacy"])) {
 }
 elseif (!Empty($_GET["purchaseReport"])) {
     $type = $_GET["type"] ?? "FULL";
+    $date = $_GET["date"] ?? "2021-08-01";
 	$clase = new ReadDataExport;
-	$clase->GetPurchasesReport($type);
+	$clase->GetPurchasesReport($type,$date);
 }

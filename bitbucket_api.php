@@ -1,6 +1,7 @@
 <?php
 
 include("update.php");
+include("bitbucket_local_api.php");
 
 class Bitbucket {
 	private $authorization;
@@ -15,8 +16,110 @@ class Bitbucket {
 		return $this->authorization;
 	}
 
-	function getRepositorys($project="CBFF") {
-		return $this->cUrlGet("https://bitbucket.telecom.com.ar/rest/api/1.0/projects/".$project."/repos");
+	function getRepositorys($project="CBFF", $limit=50, $start=0, $typeResponse="JSON") {
+		$isLastPage=true;
+		$result=array();
+		while ($isLastPage) {
+			$response = $this->cUrlGet("https://bitbucket.telecom.com.ar/rest/api/1.0/projects/".$project."/repos?limit=".$limit."&start=".$start."");
+			$data = json_decode($response, true);
+			foreach ($data['values'] as $key => $value) {
+				array_push($result,$value);
+			}
+			$isLastPage=$data['isLastPage'];
+			$start = $data['nextPageStart'];
+		}
+		if ($typeResponse=="JSON") {
+			return json_encode($result, true);
+		} else {
+			return $result;
+		}
+	}
+
+	function updateRepositorys($project="CBFF", $limit=50, $start=0) {
+		include("coneccion.php");
+		$bitbucket = new Bitbucket_Local;
+		$bitbucket->CleanHref(1,$mysqli);
+		$responseRepos=$bitbucket->getRepositorys($mysqli);
+		$dataRepos = json_decode($responseRepos, true);
+		$responseEnv=$bitbucket->getEnvironments($mysqli);
+		$dataEnv = json_decode($responseEnv, true);
+		$dataOrigen=$this->getRepositorys("CBFF",50,0,"ARRAY");
+		$names = array_column($dataRepos, 'name');
+		foreach ($dataOrigen as $key => $value) {
+			$this->updateQueryRepositorys($value, 1, $mysqli);
+			$found_key = array_search($value["name"], $names);
+			if ($dataRepos[$found_key]["name"]===$value["name"]) {
+				$this->SearchInfoByRepo($value["name"], $project, $dataEnv, $dataRepos[$found_key]["idtype"], $mysqli);
+			}
+		}
+		$mysqli->close();
+	}
+
+	public function SearchInfoByRepo(String $repo, $project, $dataEnv, $type, $mysqli)
+	{
+		$response = $this->getTagsForOneRepository($repo, $project, 55);
+		$tags = json_decode($response, true);
+	
+		$responsePR = $this->GetPR($repo);
+		$dataPR = json_decode($responsePR, true);
+	
+		foreach ($dataEnv as $key => $value) {
+			$until =  $value["name"];
+			if ($type == 1 && $value["name"]=="testing") {
+				$until = "staging";
+			}
+			elseif ($type == 1 && $value["name"]=="staging") {
+				$until = "preprod";
+			}
+			$this->verify($repo, $project, $until, 3, $tags, $dataPR, $value["name"]);
+		}
+	}
+
+	public function UpdateRepoCountPR($dataPR = null)
+	{
+		$prSize = 0;
+		if (($dataPR ? $dataPR["size"] : 0)>0) {
+			foreach ($dataPR["values"] as $keyPr => $valuePr) {
+				if ($valuePr["toRef"]["displayId"]==$until) {
+					$prSize++;
+				}
+			}
+		}
+		$query_string = "UPDATE repository_x_environment SET pr_pending='".$dataOrigen["name"]."',
+		description='".(!Empty($dataOrigen["description"]) ? $dataOrigen["description"] : '')."',
+		id_repo_origen=".$dataOrigen["id"].",
+		href='".$dataOrigen["links"]["self"][0]["href"]."'
+		WHERE name='".$dataOrigen['name']."' and origen=".$origen;
+		if (!($mysqli->query($query_string) === TRUE)) {
+			printf("Errormessage: %s\n", $mysqli->error);
+			echo 'Houston we have a problem '.mysqli_error($mysqli);
+		}
+	}
+
+	function updateQueryRepositorys($dataOrigen, $origen, $mysqli) {
+		$query_string = "UPDATE repositorios SET name='".$dataOrigen["name"]."',
+		description='".(!Empty($dataOrigen["description"]) ? $dataOrigen["description"] : '')."',
+		id_repo_origen=".$dataOrigen["id"].",
+		href='".$dataOrigen["links"]["self"][0]["href"]."'
+		WHERE name='".$dataOrigen['name']."' and origen=".$origen;
+		if (!($mysqli->query($query_string) === TRUE)) {
+			printf("Errormessage: %s\n", $mysqli->error);
+			echo 'Houston we have a problem '.mysqli_error($mysqli);
+		}
+		if ($mysqli->affected_rows===0) {
+			$this->createQueryRepositorys($dataOrigen, 1, $mysqli);
+		}
+	}
+
+	function createQueryRepositorys($dataOrigen, $origen, $mysqli) {
+		$query_string = "INSERT INTO `repositorios`(`name`, `description`, `type`, `status`, `origen`, `id_repo_origen`, `href`) VALUES 
+		('".$dataOrigen["name"]."','".(!Empty($dataOrigen["description"]) ? $dataOrigen["description"] : '')."',99,1,".$origen.",".$dataOrigen["id"].",'".$dataOrigen["links"]["self"][0]["href"]."')";
+		if (!$mysqli->query($query_string)) {
+			printf("Errormessage: %s\n", $mysqli->error);
+			echo 'Houston we have a problem '.mysqli_error($mysqli);
+		}
+		$bitbucket = new Bitbucket_Local;
+		$responseEnv = $bitbucket->createRepoXEnvironments($mysqli->insert_id);
 	}
 
 	function getTagsForOneRepository($repo,$project="CBFF",$limit=5) {
@@ -96,7 +199,7 @@ class Bitbucket {
 		return $this->cUrlPost($url,false,$headers);
 	}
 
-	function verify($repo, $project, $until, $limit, $tags, $dataPR) {
+	function verify($repo, $project, $until, $limit, $tags, $dataPR, $untilLocal) {
 		$update = new UpdateRepo;
 		$response = $this->getCommitsForOneRepository($repo, $project, $until, $limit);
 		$data = json_decode($response, true);
@@ -109,24 +212,29 @@ class Bitbucket {
 			}
 		}
 		
-		$break = false;
-		foreach ($data["values"] as $key => $value) {
-			if ($tags["size"]>0) {
-				foreach ($tags["values"] as $keyTag => $valueTag) {
-					if ($value["id"]==$valueTag["latestCommit"]) {
-						$update->updateCommitAndTagAndPr($until,$repo,$value["id"],$valueTag["displayId"],$prSize);
-						$break=true;
-						break;
+		if ((!Empty($data["size"]) ? $data["size"] : 0)>0) {
+			$break = false;
+			foreach ($data["values"] as $key => $value) {
+				if ($tags["size"]>0) {
+					foreach ($tags["values"] as $keyTag => $valueTag) {
+						if ($value["id"]==$valueTag["latestCommit"]) {
+							$update->updateCommitAndTagAndPr($untilLocal,$repo,$value["id"],$valueTag["displayId"],$prSize);
+							$break=true;
+							break;
+						}
 					}
+				} else {
+					$update->updateCommitAndTagAndPr($untilLocal,$repo,$value["id"],"N/A",$prSize);
+					$break=true;
 				}
-			} else {
-				$update->updateCommitAndTagAndPr($until,$repo,$value["id"],"N/A",$prSize);
-				$break=true;
+				
+				if ($break) {
+					break;
+				}
 			}
-			
-			if ($break) {
-				break;
-			}
+		}
+		else {
+			echo "Error no commits: repo->".$repo.", project->".$project.", until->".$until."<br>";
 		}
 		unset($update);
 	}
@@ -437,4 +545,22 @@ elseif (!Empty($_GET["stm"])) {
 	}
 	
 	exit;
+}
+elseif (!Empty($_GET["repos"])) {
+	$project = $_GET["project"] ?? "CBFF";
+	$limit = $_GET["limit"] ?? 50;
+	$start = $_GET["start"] ?? 0;
+	$bitbucket = new Bitbucket;
+
+	
+	$response = $bitbucket->getRepositorys($project,$limit,$start);
+	print_r($response);
+}
+elseif (!Empty($_GET["updateRepositorys"])) {
+	$project = $_GET["project"] ?? "CBFF";
+	$limit = $_GET["limit"] ?? 50;
+	$start = $_GET["start"] ?? 0;
+	$bitbucket = new Bitbucket;
+	$response = $bitbucket->updateRepositorys($project,$limit,$start);
+	print_r($response);
 }

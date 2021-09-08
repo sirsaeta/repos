@@ -59,6 +59,7 @@ class UpdateRepo {
 		.$until."_last_commit='".$lastCommit."', "
 		.$until."='".$tag."' WHERE name='".$repoName."'";
 		if (!$mysqli->query($query_string)) {
+			error_log("query_string: ".$query_string);
 			error_log("Errormessage: %s\n", $mysqli->error);
 			$response["status"]=false;
 			$response["message"]=$mysqli->error;

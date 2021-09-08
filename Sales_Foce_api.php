@@ -376,34 +376,34 @@ if (!Empty($_GET["getOrderStatus"])) {
 	echo "<td>"."status"."</td>";
 	echo "</tr>";
 	echo "<tr>";
-	echo "<td>".$data['id']."</td>";
-	echo "<td>".$data['requestedStatus']['name']."</td>";
-	echo "<td>".$data['currentStatus']['name']."</td>";
-	echo "<td>".($data['vlOrder'] ? $data['vlOrder']['TrackingStatus__c'] : "")."</td>";
-	echo "<td>".$dataPurchase['id']."</td>";
-	echo "<td>".$dataPurchase['version']."</td>";
-	echo "<td>".$dataPurchase['documentNumber']."</td>";
+	echo "<td nowrap='nowrap'>".$data['id']."</td>";
+	echo "<td nowrap='nowrap'>".$data['requestedStatus']['name']."</td>";
+	echo "<td nowrap='nowrap'>".$data['currentStatus']['name']."</td>";
+	echo "<td nowrap='nowrap'>".($data['vlOrder'] ? $data['vlOrder']['TrackingStatus__c'] : "")."</td>";
+	echo "<td nowrap='nowrap'>".$dataPurchase['id']."</td>";
+	echo "<td nowrap='nowrap'>".$dataPurchase['version']."</td>";
+	echo "<td nowrap='nowrap'>".$dataPurchase['documentNumber']."</td>";
 	$productCode = "";
 	if (!Empty($dataPurchase['products'][0]['offering']['productSpecification'])) {
 		$productCode = $dataPurchase['products'][0]['offering']['productCode'];
-		echo "<td>".$dataPurchase['products'][0]['offering']['productCode']."</td>";
-		echo "<td>".$dataPurchase['products'][0]['offering']['slug']."</td>";
+		echo "<td nowrap='nowrap'>".$dataPurchase['products'][0]['offering']['productCode']."</td>";
+		echo "<td nowrap='nowrap'>".$dataPurchase['products'][0]['offering']['slug']."</td>";
 	}
 	elseif (!Empty($dataPurchase['products'][0]['offering']['products'])) {
 		$productCode = $dataPurchase['products'][0]['offering']['productCode'];
-		echo "<td>".$dataPurchase['products'][0]['offering']['productCode']."</td>";
-		echo "<td>".$dataPurchase['products'][0]['offering']['slug']."</td>";
+		echo "<td nowrap='nowrap'>".$dataPurchase['products'][0]['offering']['productCode']."</td>";
+		echo "<td nowrap='nowrap'>".$dataPurchase['products'][0]['offering']['slug']."</td>";
 	}
 	else {
-		echo "<td></td>";
-		echo "<td></td>";
+		echo "<td nowrap='nowrap'></td>";
+		echo "<td nowrap='nowrap'></td>";
 	}
 	if($dataStock) 
-	echo "<td>available:".$dataStock['stock']['productInventory']["available"]."<br><br>recognized:".
+	echo "<td nowrap='nowrap'>available:".$dataStock['stock']['productInventory']["available"]."<br><br>recognized:".
 	$dataStock['stock']['productInventory']["recognized"]."<br><br>reserved:".
 	$dataStock['stock']['productInventory']["reserved"]."</td>";
-	else echo "<td></td>";
-	echo "<td>";
+	else echo "<td nowrap='nowrap'></td>";
+	echo "<td nowrap='nowrap'>";
 		//print_r(json_encode($dataPurchase['status']));
 		foreach ($dataPurchase['status'] as $key => $value) {
 			$subStatus = !Empty($value["substatus"]) ? $value['substatus'] : '';
@@ -422,7 +422,7 @@ if (!Empty($_GET["getOrderStatus"])) {
 			}
 		}
 	echo"</td>";
-	echo "<td>";
+	echo "<td nowrap='nowrap'>";
 		$orderStatic = $salesforce->GetOrderByIDInParse($idPurchase);
 		
 		echo "<br>";
@@ -441,15 +441,15 @@ if (!Empty($_GET["getOrderStatus"])) {
 		}
 		echo "<br>";
 	echo "</td>";
-	echo "<td>".(substr($dateInProgress,0,13)==substr($dateOrderDespachado,0,13) ? "SI" : "NO")."</td>";
-	echo "<td>";
+	echo "<td nowrap='nowrap'>".(substr($dateInProgress,0,13)==substr($dateOrderDespachado,0,13) ? "SI" : "NO")."</td>";
+	echo "<td nowrap='nowrap'>";
 	if (!Empty($data["id"])) {
 		if (!$isInProgress && !$isDespachado && !$isCompleted) {
 			echo "<br><a href='http://localhost/repos/Sales_Foce_api.php?sendStatusCommentID=true&externalId=".urlencode($idPurchase)."&id=".$data["id"]."'>Enviar InProgress</a>";
 		}
-		//if (!$isDespachado && !$isCompleted) {
+		if (!$isDespachado && !$isCompleted) {
 			echo "<br><br><a href='http://localhost/repos/Sales_Foce_api.php?sendStatusCommentID=true&externalId=".urlencode($idPurchase)."&id=".$data["id"]."&currentStatusName=InProgress&requestedStatusName=InProgress&TrackingStatus__c=Despachado'>Enviar Despachado</a>";
-		//}
+		}
 		if (!$isCompleted && $data['vlOrder'] ? $data['vlOrder']['TrackingStatus__c'] : ""=="Entregado" && $data['currentStatus']['name']=="Completed" && $data['requestedStatus']['name']=="Completed") {
 			echo "<br><br><a href='http://localhost/repos/Sales_Foce_api.php?sendStatusCommentID=true&externalId=".urlencode($idPurchase)."&id=".$data["id"]."&currentStatusName=Completed&requestedStatusName=Completed'>Enviar Completed</a>";
 		}
